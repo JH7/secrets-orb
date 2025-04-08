@@ -1,228 +1,62 @@
-# 1Password Secrets Orb for CircleCI
+# Orb Template
 
-[![CircleCI Build Status](https://circleci.com/gh/1Password/secrets-orb.svg?style=shield "CircleCI Build Status")](https://circleci.com/gh/1Password/secrets-orb) [![CircleCI Orb Version](https://badges.circleci.com/orbs/onepassword/secrets.svg)](https://circleci.com/orbs/registry/orb/onepassword/secrets) [![GitHub License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://raw.githubusercontent.com/1Password/secrets-orb/main/LICENSE) [![CircleCI Community](https://img.shields.io/badge/community-CircleCI%20Discuss-343434.svg)](https://discuss.circleci.com/c/ecosystem/orbs)
+<!---
+[![CircleCI Build Status](https://circleci.com/gh/<organization>/<project-name>.svg?style=shield "CircleCI Build Status")](https://circleci.com/gh/<organization>/<project-name>) [![CircleCI Orb Version](https://badges.circleci.com/orbs/<namespace>/<orb-name>.svg)](https://circleci.com/developer/orbs/orb/<namespace>/<orb-name>) [![GitHub License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://raw.githubusercontent.com/<organization>/<project-name>/master/LICENSE) [![CircleCI Community](https://img.shields.io/badge/community-CircleCI%20Discuss-343434.svg)](https://discuss.circleci.com/c/ecosystem/orbs)
 
-With the 1Password Secrets orb for CircleCI, you can load secrets from 1Password into CircleCI CI/CD pipelines and sync them automatically. Using this orb removes the risk of exposing plaintext secrets in code.
+--->
 
-You can use the orb with [1Password Connect Server](https://developer.1password.com/docs/connect) or a [1Password Service Account](https://developer.1password.com/docs/service-accounts).
+A project template for Orbs.
 
-This orb is officially supported and maintained by 1Password, but community contributions are welcome.
+This repository is designed to be automatically ingested and modified by the CircleCI CLI's `orb init` command.
 
-Read more on the [1Password Developer Portal](https://developer.1password.com/ci-cd/circle-ci).
+_**Edit this area to include a custom title and description.**_
 
-## Requirements
-
-Before you get started, if you want to use Connect, you'll need to:
-
-- [Set up a Secrets Automation workflow](https://developer.1password.com/docs/connect/get-started#step-1-set-up-a-secrets-automation-workflow).
-- [Deploy 1Password Connect](https://developer.1password.com/docs/connect/get-started#step-2-deploy-1password-connect-server) in your infrastructure.
-- On the [CircleCI settings page](https://circleci.com/docs/settings/), set the `OP_CONNECT_HOST` and `OP_CONNECT_TOKEN` environment variables to your Connect instance's credentials so that it'll be used to load secrets.
-
-If you want to use Service Accounts, you'll need to:
-
-- [Create a service account.](https://developer.1password.com//docs/service-accounts/)
-- On the [CircleCI settings page](https://circleci.com/docs/settings/), set the `OP_SERVICE_ACCOUNT_TOKEN` environment variable to your service account's credentials so that it'll be used to load secrets.
-
-**NOTE:** If either `OP_CONNECT_HOST` or `OP_CONNECT_TOKEN` environment variables have been set alongside `OP_SERVICE_ACCOUNT_TOKEN`, the Connect credentials will take precedence over the provided service account token. You must unset the Connect environment variables to ensure the action uses the service account token.
-
-## Usage examples
-
-### Install 1Password CLI within a Circle CI job
-
-1Password CLI needs to be available to the pipeline for the orb to function. You can install the CLI as the first step of a CircleCI job using the `1password/install-cli` command. Once installed, you can use 1Password CLI commands in subsequent steps in the pipeline.
-
-```yaml
-version: 2.1
-orbs:
-  1password: onepassword/secrets@1.0.0
-
-jobs:
-  deploy:
-    machine:
-      image: ubuntu-2204:current
-    steps:
-      - 1password/install-cli
-      - checkout
-      - run:
-          shell: op run -- /bin/bash
-          environment:
-            AWS_ACCESS_KEY_ID: op://company/app/aws/access_key_id
-            AWS_SECRET_ACCESS_KEY: op://company/app/aws/secret_access_key
-          command: |
-            echo "This value will be masked: $AWS_ACCESS_KEY_ID"
-            echo "This value will be masked: $AWS_SECRET_ACCESS_KEY"
-            ./deploy-my-app.sh
-
-workflows:
-  deploy:
-    jobs:
-      - deploy
-```
-
-If you want to use the orb with a [1Password Service Account](https://developer.1password.com/docs/service-accounts/), specify the 1Password CLI version (`2.18.0` or later).
-
-```yaml
-version: 2.1
-orbs:
-  1password: onepassword/secrets@1.0.0
-
-jobs:
-  deploy:
-    machine:
-      image: ubuntu-2204:current
-    steps:
-      - 1password/install-cli:
-          version: 2.18.0
-      - checkout
-      - run:
-          shell: op run -- /bin/bash
-          environment:
-            AWS_ACCESS_KEY_ID: op://company/app/aws/access_key_id
-            AWS_SECRET_ACCESS_KEY: op://company/app/aws/secret_access_key
-          command: |
-            echo "This value will be masked: $AWS_ACCESS_KEY_ID"
-            echo "This value will be masked: $AWS_SECRET_ACCESS_KEY"
-            ./deploy-my-app.sh
-
-workflows:
-  deploy:
-    jobs:
-      - deploy
-```
-
-<details>
-    <summary>Another example, with Docker</summary>
-
-```yaml
-description: >
-  Install 1Password CLI within a job and make it useable for all the commands following the installation.
-usage:
-  version: 2.1
-  orbs:
-    1password: onepassword/secrets@1.0.0
-  jobs:
-    deploy:
-      machine:
-        image: ubuntu-2204:current
-      steps:
-        - 1password/install-cli
-        - checkout
-        - run: |
-            docker login -u $(op read op://company/docker/username) -p $(op read op://company/docker/password)
-            docker build -t company/app:${CIRCLE_SHA1:0:7} .
-            docker push company/app:${CIRCLE_SHA1:0:7}
-  workflows:
-    deploy:
-      jobs:
-        - deploy
-```
-
-</details>
-
-### Load secrets with the `1password/exec` command
-
-First, install 1Password CLI with `1password/install-cli`. Then use the `1password/exec` command to load secrets on demand and execute commands requiring secrets. Sensitive values that may be accidentally logged will be masked. After adding the `1password/exec` command as a step in your job, you can execute commands that require secrets.
-
-```yaml
-version: 2.1
-orbs:
-  1password: onepassword/secrets@1.0.0
-
-jobs:
-  deploy:
-    machine:
-      image: ubuntu-2204:current
-    environment:
-      AWS_ACCESS_KEY_ID: op://company/app/aws/access_key_id
-      AWS_SECRET_ACCESS_KEY: op://company/app/aws/secret_access_key
-    steps:
-      - checkout
-      - 1password/install-cli
-      - 1password/exec:
-          command: |
-            echo "This value will be masked: $AWS_ACCESS_KEY_ID"
-            echo "This value will be masked: $AWS_SECRET_ACCESS_KEY"
-            ./deploy-my-app.sh
-workflows:
-  deploy:
-    jobs:
-      - deploy
-```
-
-### Load secrets with the `1password/export` command
-
-You can use `1password/export` to resolve variables at the job level.
-
-First, install 1Password CLI with `1password/install-cli`. Then use the `1password/export` command to load the secrets with references exported in the environment. The secrets will then be available to subsequent steps of the job.
-
-_Note: Unlike `1password/exec`, the export command does not mask the secret values from the logs._
-
-```yaml
-version: 2.1
-orbs:
-  1password: onepassword/secrets@1.0.0
-
-jobs:
-  deploy:
-    machine:
-      image: ubuntu-2204:current
-    steps:
-      - checkout
-      - 1password/install-cli
-      - 1password/export:
-          var-name: AWS_ACCESS_KEY_ID
-          secret-reference: op://company/app/aws/access_key_id
-      - 1password/export:
-          var-name: AWS_SECRET_ACCESS_KEY
-          secret-reference: op://company/app/aws/secret_access_key
-      - run:
-          command: |
-            echo "This value will not be masked: $AWS_ACCESS_KEY_ID"
-            echo "This value will not be masked: $AWS_SECRET_ACCESS_KEY"
-            ./deploy-my-app.sh
-workflows:
-  deploy:
-    jobs:
-      - deploy
-```
-
-## Including the orb in your project
-
-To include a specific version of the orb, add the following in your `config.yml` file (replace `1.0.0` with the desired version number):
-
-```yaml
-orbs:
-  1password: onepassword/secrets@1.0.0
-```
-
-To include the _latest_ version of 1Password Secrets orb in your project, add the following:
-
-```yaml
-orbs:
-  1password: onepassword/secrets@volatile
-```
-
-## Masking
-
-When using either the `1password/exec` orb command or the [`op run`](https://developer.1password.com/docs/cli/reference/commands/run) shell wrapper, all secrets are automatically masked from the CI log output. If secrets accidentally get logged, they will be replaced with `<concealed by 1Password>`.
-
-If you use the `1password/export` command, secrets aren't masked.
+---
 
 ## Resources
 
-- [1Password Secrets orb CircleCI registry page <i className="fas fa-external-link"></i>](https://circleci.com/orbs/registry/orb/onepassword/secrets). This official registry page contains information on all versions and commands.
-- Learn more about using [CircleCI orbs. <i className="fas fa-external-link"></i>](https://circleci.com/docs/orb-intro/)
+[CircleCI Orb Registry Page](https://circleci.com/developer/orbs/orb/<namespace>/<orb-name>) - The official registry page of this orb for all versions, executors, commands, and jobs described.
 
-## How to Contribute
+[CircleCI Orb Docs](https://circleci.com/docs/orb-intro/#section=configuration) - Docs for using, creating, and publishing CircleCI Orbs.
 
-We welcome creating [issues](https://github.com/1Password/secrets-orb/issues) in and [pull requests](https://github.com/1Password/secrets-orb/pulls) against the `secrets-orb` repository!
+### How to Contribute
 
-## Security
+We welcome [issues](https://github.com/<organization>/<project-name>/issues) to and [pull requests](https://github.com/<organization>/<project-name>/pulls) against this repository!
 
-1Password requests you practice responsible disclosure if you discover a vulnerability.
+### How to Publish An Update
+1. Merge pull requests with desired changes to the main branch.
+    - For the best experience, squash-and-merge and use [Conventional Commit Messages](https://conventionalcommits.org/).
+2. Find the current version of the orb.
+    - You can run `circleci orb info <namespace>/<orb-name> | grep "Latest"` to see the current version.
+3. Create a [new Release](https://github.com/<organization>/<project-name>/releases/new) on GitHub.
+    - Click "Choose a tag" and _create_ a new [semantically versioned](http://semver.org/) tag. (ex: v1.0.0)
+      - We will have an opportunity to change this before we publish if needed after the next step.
+4.  Click _"+ Auto-generate release notes"_.
+    - This will create a summary of all of the merged pull requests since the previous release.
+    - If you have used _[Conventional Commit Messages](https://conventionalcommits.org/)_ it will be easy to determine what types of changes were made, allowing you to ensure the correct version tag is being published.
+5. Now ensure the version tag selected is semantically accurate based on the changes included.
+6. Click _"Publish Release"_.
+    - This will push a new tag and trigger your publishing pipeline on CircleCI.
 
-Please file requests by sending an email to bugbounty@agilebits.com.
+### Development Orbs
 
-## Getting help
+Prerequisites:
 
-If you find yourself stuck, visit our [**Support Page**](https://developer.1password.com/ci-cd) for help.
+- An initial sevmer deployment must be performed in order for Development orbs to be published and seen in the [Orb Registry](https://circleci.com/developer/orbs).
+
+A [Development orb](https://circleci.com/docs/orb-concepts/#development-orbs) can be created to help with rapid development or testing. To create a Development orb, change the `orb-tools/publish` job in `test-deploy.yml` to be the following:
+
+```yaml
+- orb-tools/publish:
+    orb_name: <namespace>/<orb-name>
+    vcs_type: << pipeline.project.type >>
+    pub_type: dev
+    # Ensure this job requires all test jobs and the pack job.
+    requires:
+      - orb-tools/pack
+      - command-test
+    context: <publishing-context>
+    filters: *filters
+```
+
+The job output will contain a link to the Development orb Registry page. The parameters `enable_pr_comment` and `github_token` can be set to add the relevant publishing information onto a pull request. Please refer to the [orb-tools/publish](https://circleci.com/developer/orbs/orb/circleci/orb-tools#jobs-publish) documentation for more information and options.

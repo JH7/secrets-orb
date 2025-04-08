@@ -1,11 +1,15 @@
 version: 2.1
 
 description: >
-  Load secrets from 1Password into your CircleCI jobs, through a Connect server, deployed in your infrastructure.
-
-  For more information about setting up Secrets Automation and deploying Connect, check out the 1Password Developer Documentation.
+  Sample orb description
+# What will your orb allow users to accomplish?
+# Descriptions should be short, simple, and informative.
 
 # This information will be displayed in the orb registry and is not mandatory.
 display:
-  home_url: "https://developer.1password.com/"
-  source_url: "https://github.com/1Password/secrets-orb"
+  home_url: "https://www.example.com/docs"
+  source_url: "https://github.com/<organization>/<project-name>"
+
+# If your orb requires other orbs, you can import them like this. Otherwise remove the "orbs" stanza.
+# orbs:
+#  hello: circleci/hello-build@0.0.5
